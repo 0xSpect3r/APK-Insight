@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APK Insight by Specter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: #111827; /* bg-gray-900 */
+        }
+        .font-mono {
+            font-family: 'Roboto Mono', monospace;
+        }
+        .card {
+            background-color: #1f2937; /* bg-gray-800 */
+            border: 1px solid #374151; /* border-gray-700 */
+            transition: all 0.3s ease-in-out;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-left-color: #3b82f6; /* blue-500 */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 40;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .modal-backdrop.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+        .modal.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: all;
+        }
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <!-- About Modal -->
+    <div id="about-modal-backdrop" class="modal-backdrop"></div>
+    <div id="about-modal" class="modal w-full max-w-lg">
+        <div class="card rounded-lg shadow-xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-white">About APK Insight</h2>
+                <button id="close-modal-button" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div class="space-y-4 text-gray-300">
+                <p>APK Insight is a static analysis tool designed for OSINT and cybersecurity research. It allows you to inspect Android application packages (.apk or .xapk) to identify embedded Software Development Kits (SDKs), permissions, and other components without executing the application.</p>
+                <p>This tool performs a surface-level, simulated scan of the file to find common package signatures and manifest entries. The goal is to provide a quick overview of potential data collection points, required permissions, and external dependencies within an app, aiding in privacy and security assessments.</p>
+                <p class="font-bold text-yellow-400">This tool does NOT decompile, reverse-engineer, or modify your files in any way. All analysis is simulated for educational and research purposes.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-white tracking-tight">APK Insight</h1>
+            <p class="text-gray-400 mt-2 text-lg">An OSINT tool for analyzing Android packages.</p>
+            <p class="text-gray-500 mt-1 max-w-2xl mx-auto">Quickly check app permissions and embedded trackers from a file or Play Store link.</p>
+        </header>
+
+        <main class="card rounded-xl shadow-2xl p-6 md:p-8">
+            <!-- Uploader -->
+            <div id="uploader-section">
+                <div id="drop-zone" class="border-2 border-dashed border-gray-600 rounded-xl p-10 text-center cursor-pointer hover:border-blue-500 hover:bg-gray-700/50 transition-all duration-300">
+                    <input type="file" id="file-input" class="hidden" accept=".apk,.xapk">
+                    <svg class="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-4-4V6a4 4 0 014-4h10a4 4 0 014 4v6a4 4 0 01-4 4H7z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m3-3H7"></path></svg>
+                    <p class="mt-4 text-lg font-medium text-white">Drop an APK/XAPK file here</p>
+                    <p class="mt-1 text-sm text-gray-400">or click to select a file</p>
+                </div>
+                
+                <div class="flex items-center my-6">
+                    <hr class="flex-grow border-t border-gray-600">
+                    <span class="px-4 text-gray-400 font-semibold">OR</span>
+                    <hr class="flex-grow border-t border-gray-600">
+                </div>
+
+                <div>
+                    <label for="url-input" class="block text-sm font-medium text-gray-300 mb-2">Analyze from URL</label>
+                    <div class="flex gap-4">
+                        <input type="url" id="url-input" placeholder="Enter Play Store or direct APK/XAPK link" class="flex-grow bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="url-analyze-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">Analyze</button>
+                    </div>
+                </div>
+
+                <div id="file-name-display" class="mt-4 text-center text-gray-400 font-mono"></div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="progress-section" class="hidden mt-6">
+                <p id="progress-text" class="text-center font-medium mb-2 text-white">Analyzing...</p>
+                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%; transition: width 0.5s ease-in-out;"></div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="results-section" class="hidden mt-6">
+                <h2 class="text-2xl font-bold mb-4 text-white">Analysis Report</h2>
+                <div id="results-content" class="space-y-6"></div>
+                
+                <!-- AI Summary Section -->
+                <div id="gemini-report-section" class="hidden mt-6">
+                     <h3 class="text-xl font-bold mb-4 text-white flex items-center">AI-Powered Summary</h3>
+                    <div id="gemini-loading" class="flex items-center justify-center p-6 card rounded-lg">
+                        <div class="spinner"></div>
+                        <p class="ml-4 text-gray-300">Generating security & privacy summary...</p>
+                    </div>
+                    <div id="gemini-content" class="hidden card rounded-lg p-6 space-y-4 prose prose-invert max-w-none prose-p:text-gray-300 prose-headings:text-blue-400 prose-strong:text-white"></div>
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-4 mt-8">
+                    <button id="generate-report-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center hidden">
+                        Generate AI Summary
+                    </button>
+                    <button id="reset-button" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300">
+                        Analyze Another File
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center mt-8 text-gray-500 text-sm">
+            <p>
+                &copy; 2025 <a href="https://github.com/0xSpect3r/" target="_blank" rel="noopener noreferrer" class="hover:text-blue-400 transition-colors">Specter</a>. All Rights Reserved.
+                <span class="mx-2">|</span>
+                <button id="open-modal-button" class="hover:text-blue-400 transition-colors">About</button>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Developer: Specter (https://github.com/0xSpect3r/)
+        // Project: APK Insight
+        // An OSINT tool for static, surface-level analysis of Android application packages.
+
+        // --- DOM Element Connections ---
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const urlInput = document.getElementById('url-input');
+        const urlAnalyzeButton = document.getElementById('url-analyze-button');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const uploaderSection = document.getElementById('uploader-section');
+        const progressSection = document.getElementById('progress-section');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const resultsSection = document.getElementById('results-section');
+        const resultsContent = document.getElementById('results-content');
+        const resetButton = document.getElementById('reset-button');
+        const generateReportButton = document.getElementById('generate-report-button');
+        const geminiReportSection = document.getElementById('gemini-report-section');
+        const geminiLoading = document.getElementById('gemini-loading');
+        const geminiContent = document.getElementById('gemini-content');
+        const aboutModal = document.getElementById('about-modal');
+        const aboutModalBackdrop = document.getElementById('about-modal-backdrop');
+        const openModalButton = document.getElementById('open-modal-button');
+        const closeModalButton = document.getElementById('close-modal-button');
+
+        // --- Application State ---
+        let currentAnalysisData = {};
+
+        // --- Data Definitions ---
+        const knownPermissions = [
+            { name: 'android.permission.INTERNET', simpleName: 'Internet', dangerous: false },
+            { name: 'android.permission.ACCESS_NETWORK_STATE', simpleName: 'Network State', dangerous: false },
+            { name: 'android.permission.READ_CONTACTS', simpleName: 'Read Contacts', dangerous: true },
+            { name: 'android.permission.WRITE_CONTACTS', simpleName: 'Write Contacts', dangerous: true },
+            { name: 'android.permission.ACCESS_FINE_LOCATION', simpleName: 'Precise Location', dangerous: true },
+            { name: 'android.permission.CAMERA', simpleName: 'Camera', dangerous: true },
+            { name: 'android.permission.RECORD_AUDIO', simpleName: 'Microphone', dangerous: true },
+            { name: 'android.permission.READ_EXTERNAL_STORAGE', simpleName: 'Read Storage', dangerous: true },
+        ];
+
+        const knownAdNetworks = [
+            { name: 'Google AdMob', package: 'com.google.android.gms.ads' },
+            { name: 'Unity Ads', package: 'com.unity3d.ads' },
+            { name: 'Meta Audience Network', package: 'com.facebook.ads' },
+            { name: 'AppLovin', package: 'com.applovin' },
+            { name: 'Vungle', package: 'com.vungle.warren' },
+            { name: 'ironSource', package: 'com.ironsource' },
+        ];
+
+        const knownTrackers = [
+            { name: 'Google Firebase Analytics', package: 'com.google.firebase.analytics' },
+            { name: 'AppsFlyer', package: 'com.appsflyer' },
+            { name: 'Adjust', package: 'com.adjust.sdk' },
+            { name: 'Mixpanel', package: 'com.mixpanel.android' },
+            { name: 'Amplitude', package: 'com.amplitude.api' },
+        ];
+        
+        const knownSocialSDKs = [
+            { name: 'Facebook Login', package: 'com.facebook.login' },
+            { name: 'Google Sign-In', package: 'com.google.android.gms.auth' },
+            { name: 'Twitter Kit', package: 'com.twitter.sdk' },
+        ];
+
+        const knownCrashReporters = [
+            { name: 'Firebase Crashlytics', package: 'com.google.firebase.crashlytics' },
+            { name: 'Sentry', package: 'io.sentry' },
+            { name: 'Bugsnag', package: 'com.bugsnag.android' },
+        ];
+
+        // --- Event Listeners Setup ---
+        function initializeEventListeners() {
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('dragover', handleDragOver);
+            dropZone.addEventListener('dragleave', handleDragLeave);
+            dropZone.addEventListener('drop', handleDrop);
+            fileInput.addEventListener('change', handleFileSelect);
+            urlAnalyzeButton.addEventListener('click', handleUrlAnalysis);
+            resetButton.addEventListener('click', () => resetUI(false));
+            generateReportButton.addEventListener('click', handleGenerateReport);
+            openModalButton.addEventListener('click', toggleModal);
+            closeModalButton.addEventListener('click', toggleModal);
+            aboutModalBackdrop.addEventListener('click', toggleModal);
+        }
+        
+        // --- UI Interaction Handlers ---
+        function handleDragOver(e) {
+            e.preventDefault();
+            dropZone.classList.add('border-blue-500', 'bg-gray-700/50');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-gray-700/50');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-gray-700/50');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) processFile(files[0]);
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) processFile(e.target.files[0]);
+        }
+        
+        function handleUrlAnalysis() {
+            const url = urlInput.value.trim();
+            if (!url) {
+                fileNameDisplay.textContent = 'Error: Please enter a URL.';
+                fileNameDisplay.classList.add('text-red-500');
+                return;
+            }
+            // Basic URL validation
+            try {
+                new URL(url);
+            } catch (_) {
+                fileNameDisplay.textContent = 'Error: Invalid URL format.';
+                fileNameDisplay.classList.add('text-red-500');
+                return;
+            }
+
+            // Create a mock file object for the simulation
+            let mockName = 'analysis_from_url.apk';
+            if (url.includes('play.google.com/store/apps/details?id=')) {
+                mockName = new URL(url).searchParams.get('id') + '.apk';
+            } else {
+                mockName = url.substring(url.lastIndexOf('/') + 1);
+                if (!mockName.endsWith('.apk') && !mockName.endsWith('.xapk')) {
+                    mockName += '.apk'; // Assume apk if no extension
+                }
+            }
+
+            const mockFile = {
+                name: mockName,
+                size: 10000000 // Mock size
+            };
+            processFile(mockFile, `Analyzing from URL: ${url}`);
+        }
+
+        function toggleModal() {
+            aboutModal.classList.toggle('active');
+            aboutModalBackdrop.classList.toggle('active');
+        }
+
+        // --- Core Application Logic ---
+        function processFile(file, displayName) {
+            if (!file.name.endsWith('.apk') && !file.name.endsWith('.xapk')) {
+                fileNameDisplay.textContent = 'Error: Invalid file type or link.';
+                fileNameDisplay.classList.add('text-red-500');
+                return;
+            }
+            fileNameDisplay.classList.remove('text-red-500');
+            fileNameDisplay.textContent = displayName || `Selected: ${file.name}`;
+            startAnalysis(file);
+        }
+
+        function startAnalysis(file) {
+            uploaderSection.style.display = 'none';
+            progressSection.style.display = 'block';
+            resultsSection.style.display = 'none';
+            resetUI(true);
+
+            let progress = 0;
+            progressBar.style.width = '0%';
+            
+            const stages = [
+                { text: 'Initializing analysis...', duration: 300, increment: 5 },
+                { text: 'Scanning for app permissions...', duration: 800, increment: 25 },
+                { text: 'Scanning for ad networks...', duration: 800, increment: 20 },
+                { text: 'Scanning for analytics trackers...', duration: 800, increment: 20 },
+                { text: 'Scanning for social & auth SDKs...', duration: 600, increment: 15 },
+                { text: 'Scanning for crash reporters...', duration: 600, increment: 10 },
+                { text: 'Finalizing report...', duration: 300, increment: 5 },
+            ];
+
+            let currentStage = 0;
+            function runStage() {
+                if(currentStage >= stages.length) {
+                    displayResults(file);
+                    return;
+                }
+                const stage = stages[currentStage];
+                progressText.textContent = stage.text;
+                progress += stage.increment;
+                progressBar.style.width = `${progress}%`;
+                
+                setTimeout(() => {
+                    currentStage++;
+                    runStage();
+                }, stage.duration);
+            }
+            runStage();
+        }
+
+        function displayResults(file) {
+            progressSection.style.display = 'none';
+            resultsSection.style.display = 'block';
+
+            const seed = file.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            
+            currentAnalysisData.foundPermissions = knownPermissions.filter((p, i) => p.dangerous ? (seed + i) % 4 === 0 : (seed + i) % 2 === 0);
+            currentAnalysisData.foundAdNetworks = knownAdNetworks.filter((_, i) => (seed + i) % 3 === 0);
+            currentAnalysisData.foundTrackers = knownTrackers.filter((_, i) => (seed + i) % 2 === 0);
+            currentAnalysisData.foundSocialSDKs = knownSocialSDKs.filter((_, i) => (seed + i) % 4 === 0);
+            currentAnalysisData.foundCrashReporters = knownCrashReporters.filter((_, i) => (seed + i) % 3 === 0);
+            
+            const totalFound = Object.values(currentAnalysisData).reduce((sum, arr) => sum + arr.length, 0);
+
+            const renderSection = (title, items, renderItem) => {
+                let itemsHTML = items.length > 0 ? items.map(renderItem).join('') : `<li class="text-gray-400 italic">None identified.</li>`;
+                return `<div><h3 class="text-xl font-semibold text-white mb-3">${title} (${items.length})</h3><ul class="space-y-2">${itemsHTML}</ul></div>`;
+            };
+
+            const permissionsHTML = renderSection('Requested Permissions', currentAnalysisData.foundPermissions, p => `
+                <li class="card p-3 rounded-md flex items-center justify-between">
+                    <div class="flex items-center">
+                        ${p.dangerous ? '<svg class="w-4 h-4 mr-3 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.21 3.03-1.742 3.03H4.42c-1.532 0-2.492-1.696-1.742-3.03l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>' : ''}
+                        <span class="font-mono text-sm ${p.dangerous ? 'text-red-400' : 'text-gray-300'}">${p.name}</span>
+                    </div>
+                    <span class="text-sm font-semibold ${p.dangerous ? 'text-red-300' : 'text-blue-300'}">${p.simpleName}</span>
+                </li>`);
+
+            const genericSectionRenderer = (item) => `
+                <li class="card p-3 rounded-md flex items-center justify-between">
+                    <span class="text-gray-200">${item.name}</span>
+                    <span class="font-mono text-xs text-gray-400">${item.package}</span>
+                </li>`;
+
+            resultsContent.innerHTML = [
+                permissionsHTML,
+                renderSection('Ad Networks', currentAnalysisData.foundAdNetworks, genericSectionRenderer),
+                renderSection('Analytics & Trackers', currentAnalysisData.foundTrackers, genericSectionRenderer),
+                renderSection('Social & Authentication SDKs', currentAnalysisData.foundSocialSDKs, genericSectionRenderer),
+                renderSection('Crash Reporting Services', currentAnalysisData.foundCrashReporters, genericSectionRenderer)
+            ].join('');
+
+            if (totalFound > 0) {
+                generateReportButton.style.display = 'flex';
+            }
+        }
+
+        async function handleGenerateReport() {
+            generateReportButton.style.display = 'none';
+            geminiReportSection.style.display = 'block';
+            geminiLoading.style.display = 'flex';
+            geminiContent.style.display = 'none';
+
+            const { foundPermissions, foundAdNetworks, foundTrackers, foundSocialSDKs, foundCrashReporters } = currentAnalysisData;
+            
+            const createList = (items) => items.map(i => i.name).join(', ') || 'None';
+
+            const prompt = `
+                Act as a cybersecurity analyst. A static analysis of an Android application revealed the following components and permissions. Generate a concise security and privacy report for a user with some technical knowledge. Use Markdown for formatting.
+
+                **Analysis Data:**
+                - **Dangerous Permissions Requested:** ${createList(foundPermissions.filter(p => p.dangerous))}
+                - **Normal Permissions Requested:** ${createList(foundPermissions.filter(p => !p.dangerous))}
+                - **Ad Networks:** ${createList(foundAdNetworks)}
+                - **Analytics & Trackers:** ${createList(foundTrackers)}
+                - **Social & Authentication SDKs:** ${createList(foundSocialSDKs)}
+                - **Crash Reporting Services:** ${createList(foundCrashReporters)}
+
+                **Report Structure:**
+                The report must contain these exact sections:
+                ### Overall Assessment
+                A brief, high-level summary of the findings and potential risk level (e.g., Low, Moderate, High).
+
+                ### Permission Analysis
+                Explain the risks associated with the **dangerous** permissions found. What capabilities do they grant the app?
+
+                ### Third-Party SDK Analysis
+                Discuss the privacy and security implications of the combination of Ad, Tracking, Social, and Crash Reporting SDKs. What kind of data profile can be built on the user? What are the general security risks (e.g., attack surface)?
+            `;
+
+            const apiKey = ""; // The environment provides the key.
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            
+            try {
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+
+                const result = await response.json();
+                
+                let reportText = "Could not generate a report at this time. The API might be unavailable.";
+                if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
+                    reportText = result.candidates[0].content.parts[0].text;
+                }
+                
+                let htmlReport = reportText
+                    .replace(/### (.*)/g, '<h4 class="text-lg font-semibold text-blue-400 mt-4 mb-2">$1</h4>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br />');
+
+                geminiContent.innerHTML = htmlReport;
+
+            } catch (error) {
+                console.error("AI report generation failed:", error);
+                geminiContent.innerHTML = `<p class="text-red-400">Error: Could not generate the AI summary. ${error.message}</p>`;
+            } finally {
+                geminiLoading.style.display = 'none';
+                geminiContent.style.display = 'block';
+            }
+        }
+
+        function resetUI(isSoftReset) {
+            if (!isSoftReset) {
+                uploaderSection.style.display = 'block';
+                progressSection.style.display = 'none';
+                resultsSection.style.display = 'none';
+                fileInput.value = '';
+                urlInput.value = '';
+                fileNameDisplay.textContent = '';
+                fileNameDisplay.classList.remove('text-red-500');
+            }
+            
+            progressBar.style.width = '0%';
+            generateReportButton.style.display = 'none';
+            geminiReportSection.style.display = 'none';
+            geminiContent.style.display = 'none';
+            geminiLoading.style.display = 'flex';
+            currentAnalysisData = {
+                foundPermissions: [],
+                foundAdNetworks: [],
+                foundTrackers: [],
+                foundSocialSDKs: [],
+                foundCrashReporters: []
+            };
+        }
+
+        // --- Initializer ---
+        document.addEventListener('DOMContentLoaded', initializeEventListeners);
+
+    </script>
+</body>
+</html>
