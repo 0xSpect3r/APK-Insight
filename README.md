@@ -4,7 +4,7 @@
 
 > A browser-based OSINT tool for static analysis of Android applications, identifying permissions, trackers, and other embedded SDKs.
 
-**Live Demo:** [**https://0xspect3r.github.io/apk-insight/**](https://0xspect3r.github.io/apk-insight/)
+**Live Demo:** [**https://0xspect3r.github.io/APK-insight/**](https://0xspect3r.github.io/APK-insight/)
 
 ---
 
@@ -29,7 +29,7 @@ The tool provides a high-level overview of an application's potential behavior b
 
 ## Usage
 
-1.  **Open the Live Demo:** Navigate to [https://0xspect3r.github.io/apk-insight/](https://0xspect3r.github.io/apk-insight/).
+1.  **Open the Live Demo:** Navigate to [https://0xspect3r.github.io/APK-insight/](https://0xspect3r.github.io/APK-insight/).
 2.  **Provide the App:**
     - **Option A (File):** Drag and drop an `.apk` or `.xapk` file onto the designated area, or click to select a file from your computer.
     - **Option B (URL):** Paste a link to a Google Play Store page or a direct link to an application file into the URL input field and click "Analyze".
